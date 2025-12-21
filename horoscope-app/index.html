@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ваш гороскоп</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 Ваш персональный гороскоп</h1>
+        <div class="input-group">
+            <label>Дата рождения:</label>
+            <input type="date" id="birthdate" required>
+            <button onclick="getHoroscope()">Получить гороскоп</button>
+        </div>
+        <div id="result" class="result hidden">
+            <h2 id="zodiac"></h2>
+            <p id="horoscope"></p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
