@@ -28,15 +28,9 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: .
-        file: ./Dockerfile
         push: true
         tags: |
-          cr.yandex/${{ secrets.YC_FOLDER_ID }}/horoscope-app:latest
-          cr.yandex/${{ secrets.YC_FOLDER_ID }}/horoscope-app:${{ github.sha }}
+          cr.yandex/${{ secrets.YC_FOLDER_ID }}/dio-app:latest
+          cr.yandex/${{ secrets.YC_FOLDER_ID }}/dio-app:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-
-    - name: ✅ Success notification
-      if: github.ref == 'refs/heads/main'
-      run: |
-        echo "🎉 Deployed to cr.yandex/${{ secrets.YC_FOLDER_ID }}/horoscope-app:${{ github.sha }}"

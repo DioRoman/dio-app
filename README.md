@@ -41,8 +41,8 @@ Workflow запускается на `push` в ветку `main` и:
 
 Образ публикуется как:
 
-- `cr.yandex/<YC_FOLDER_ID>/horoscope-app:latest`
-- `cr.yandex/<YC_FOLDER_ID>/horoscope-app:<commit_sha>`
+- `cr.yandex/<YC_FOLDER_ID>/dio-app:latest`
+- `cr.yandex/<YC_FOLDER_ID>/dio-app:<commit_sha>`
 ```
 
 Формат имени образа для push в Yandex Container Registry должен быть вида `cr.yandex/<registry_ID>/<image_name>:<tag>`, иначе push не пройдет.[1]
