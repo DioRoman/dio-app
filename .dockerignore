@@ -1,0 +1,48 @@
+# Git
+.git
+.github
+
+# Documentation
+README.md
+README.*
+LICENSE
+CHANGELOG.md
+
+# Config / Ignore files
+.gitignore
+.dockerignore
+.editorconfig
+.prettierrc
+.eslintrc
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Terraform
+*.tf
+*.tfstate*
+.terraform/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+coverage/
