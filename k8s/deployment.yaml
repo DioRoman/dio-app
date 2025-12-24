@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dio-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dio-app
+  template:
+    metadata:
+      labels:
+        app: dio-app
+    spec:
+      containers:
+      - name: dio-app
+        image: cr.yandex/${YC_REGISTRY_ID}/dio-app:latest  # Будет подставлено в workflow
+        ports:
+        - containerPort: 80
