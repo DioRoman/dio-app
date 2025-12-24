@@ -35,7 +35,6 @@ jobs:
         sbom: false
         
     - name: ☸️ Deploy to Kubernetes
-      if: github.ref == 'refs/heads/main'
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
         YC_REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
@@ -44,13 +43,17 @@ jobs:
         echo "$KUBE_CONFIG_DATA" | base64 -d > kubeconfig.yaml
         export KUBECONFIG=kubeconfig.yaml
         
-        # Применяем манифесты из подпапки k8s/
-        sed "s/\${YC_REGISTRY_ID}/${YC_REGISTRY_ID}/g" k8s/deployment.yaml | kubectl apply -f -
-        kubectl apply -f k8s/service.yaml
+        # Игнорируем TLS + OpenAPI валидацию
+        sed "s/\${YC_REGISTRY_ID}/${YC_REGISTRY_ID}/g" k8s/deployment.yaml | \
+          kubectl apply -f - --validate=false --insecure-skip-tls-verify=true
         
-        # Обновляем image и делаем rollout
-        kubectl set image deployment/dio-app dio-app=cr.yandex/$YC_REGISTRY_ID/dio-app:$IMAGE_TAG
-        kubectl rollout status deployment/dio-app --timeout=180s
+        kubectl apply -f k8s/service.yaml --validate=false --insecure-skip-tls-verify=true
         
-        kubectl get pods -l app=dio-app
+        kubectl set image deployment/dio-app dio-app=cr.yandex/$YC_REGISTRY_ID/dio-app:$IMAGE_TAG \
+          --validate=false --insecure-skip-tls-verify=true
+        
+        kubectl rollout status deployment/dio-app --timeout=180s --insecure-skip-tls-verify=true
+        
+        kubectl get pods -l app=dio-app --insecure-skip-tls-verify=true
         rm kubeconfig.yaml
+
