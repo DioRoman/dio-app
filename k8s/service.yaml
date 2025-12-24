@@ -8,4 +8,5 @@ spec:
   ports:
   - port: 80
     targetPort: 80
-  type: LoadBalancer  # или ClusterIP + Ingress
+    nodePort: 30080  # ← Фиксированный порт 30000-32767
+  type: NodePort

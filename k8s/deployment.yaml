@@ -12,8 +12,15 @@ spec:
       labels:
         app: dio-app
     spec:
+      # ✅ ImagePullSecrets
+      imagePullSecrets:
+      - name: ycr-secret
       containers:
       - name: dio-app
-        image: cr.yandex/${YC_REGISTRY_ID}/dio-app:latest  # Будет подставлено в workflow
+        image: cr.yandex/crpom655acgl1rhhnucb/dio-app:latest
         ports:
         - containerPort: 80
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
