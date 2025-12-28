@@ -14,20 +14,28 @@ jobs:
     - name: 🐳 Docker Buildx
       uses: docker/setup-buildx-action@v3
       
-    - name: 🔐 Yandex Cloud Auth
-      id: auth
-      uses: yandex-cloud/actions/yc-iam-token@v1
-      with:
-        service-account-key: ${{ secrets.YC_SA_PRIVATE_KEY }}
-        folder-id: ${{ secrets.YC_FOLDER_ID }}
+    - name: 🛠️ Install Yandex Cloud CLI
+      run: |
+        curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- --no-rc
+        echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
 
-    - name: Setup Yandex Cloud CLI
-      uses: yc-actions/yc-cli-init@v1
-      with:
-        service-account-key: ${{ secrets.YC_SA_KEY }}
+    - name: 🔧 Install & Configure Yandex Cloud CLI
+      run: |
+        # Установка YC CLI
+        curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+        echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+        
+        # Конфигурация SA key
+        echo '${{ secrets.YC_SA_KEY }}' > key.json
+        yc config set service-account-key key.json
+        yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
+        
+        # Тест авторизации
+        yc iam list-service-accounts || { echo "❌ Auth failed"; exit 1; }
 
-    - name: Login to Container Registry
-      run: yc container registry configure-docker
+    - name: 🔐 Login YCR (через YC CLI)
+      run: |
+        yc container registry configure-docker
             
     - name: 🏗️ Build & Push
       uses: docker/build-push-action@v6
