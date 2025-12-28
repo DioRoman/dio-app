@@ -12,7 +12,6 @@ spec:
       labels:
         app: dio-app
     spec:
-      # ✅ ImagePullSecrets
       imagePullSecrets:
       - name: ycr-secret
       containers:
