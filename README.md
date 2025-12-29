@@ -1,49 +1,131 @@
-# Horoscope App (Nginx + Docker)
+# 🌟 Dio-App - Персональный гороскоп
 
-Статическое веб-приложение: пользователь выбирает дату рождения, интерфейс показывает знак зодиака и короткий гороскоп.  
-Приложение упаковано в Docker-образ на базе Nginx и автоматически собирается/публикуется в Yandex Container Registry через GitHub Actions при каждом коммите в `main`.
+Статическое веб-приложение для генерации персонального гороскопа по дате рождения. Автоматический CI/CD деплой в Yandex Managed Kubernetes с использованием Container Registry.[1][2]
 
-## Состав репозитория
+## 🚀 Быстрый старт
 
-- `index.html` — UI и разметка
-- `style.css` — стили
-- `script.js` — логика определения знака и текста гороскопа
-- `nginx.conf` — конфиг Nginx для раздачи статики
-- `Dockerfile` — сборка образа
-- `.github/workflows/deploy.yml` — CI/CD: build & push в YCR
-- `.gitignore`, `.dockerignore`
+### Локальный запуск
+```bash
+# Сборка Docker образа
+docker build -t dio-app .
 
-## Локальный запуск
-
+# Запуск контейнера
+docker run -p 8080:80 dio-app
 ```
-docker build -t horoscope-app:local .
-docker run --rm -p 8080:80 horoscope-app:local
+Откройте http://localhost:8080[3]
+
+### Kubernetes (Yandex Cloud)
+Приложение доступно на порту **30080** всех нод кластера:
 ```
-
-Откройте в браузере: `http://localhost:8080`
-
-## CI/CD (GitHub Actions → YCR)
-
-Workflow запускается на `push` в ветку `main` и:
-1) логинится в `cr.yandex`  
-2) собирает Docker image  
-3) пушит image в Yandex Container Registry с тегами `latest` и `${GITHUB_SHA}`
-
-### Обязательные GitHub Secrets
-
-Добавьте в репозитории: **Settings → Secrets and variables → Actions → New repository secret**
-
-- `YC_ACCESS_KEY_ID` — Access Key ID сервисного аккаунта (например, `YCAJE...`)
-- `YC_ACCESS_KEY_SECRET` — Secret Key сервисного аккаунта (например, `YCP...`)
-- `YC_FOLDER_ID` — ID каталога (folder) в Yandex Cloud
-
-## Имя образа
-
-Образ публикуется как:
-
-- `cr.yandex/<YC_FOLDER_ID>/dio-app:latest`
-- `cr.yandex/<YC_FOLDER_ID>/dio-app:<commit_sha>`
+http://<ANY_NODE_IP>:30080
 ```
 
-Формат имени образа для push в Yandex Container Registry должен быть вида `cr.yandex/<registry_ID>/<image_name>:<tag>`, иначе push не пройдет.[1]
-Для Docker CLI endpoint реестра при аутентификации используется `cr.yandex` (например, `docker login ... cr.yandex`).
+## 🏗️ Архитектура
+
+```
+GitHub → Yandex Container Registry → Managed Kubernetes (2 реплики)
+          ↓
+      NodePort:30080 → Nginx → Статический SPA
+```
+
+**Компоненты:**
+- **Nginx**: Оптимизированный сервер с gzip, долгоживущим кэшем (1 год) для статики[3]
+- **SPA**: HTML/JS/CSS - определение знака зодиака + готовые гороскопы
+- **Kubernetes**: Deployment (2 поды) + NodePort Service[2]
+- **CI/CD**: GitHub Actions → YCR → `kubectl rollout`[4]
+
+## 📁 Структура проекта
+
+```
+.
+├── Dockerfile          # Nginx:alpine + оптимизация
+├── nginx.conf          # SPA routing + caching + gzip
+├── static/             # Frontend файлы
+│   ├── index.html
+│   ├── script.js       # Логика гороскопов
+│   └── style.css
+└── k8s/
+    ├── deployment.yaml # 2 реплики, 128Mi/100m лимиты
+    └── service.yaml    # NodePort 30080
+└── .github/workflows/ # Авто деплой на main
+```
+
+## 🔧 Настройка production
+
+### 1. Yandex Cloud секреты (GitHub)
+```
+YC_CLOUD_ID        # ID облака
+YC_FOLDER_ID       # ID папки
+YC_REGISTRY_ID     # crpXXXXXXXXX
+YC_SA_KEY          # JSON ключ сервисного аккаунта
+KUBE_CONFIG_DATA   # base64(kubeconfig)
+```
+
+### 2. Развертывание в кластер
+```bash
+# Генерация kubeconfig
+yc managed-kubernetes cluster get-kubeconfig --id <CLUSTER_ID>
+
+# Apply манифесты
+kubectl apply -f k8s/
+```
+
+**Роли для SA:**
+- `container-registry.images.pusher` (YCR)
+- `editor` (Kubernetes)[5]
+
+## 🎯 Особенности
+
+### Nginx оптимизации
+- `try_files` для SPA роутинга
+- `Cache-Control: immutable` (1y) для assets
+- Gzip для текста/JS/CSS
+- `tini` для правильного PID 1[3]
+
+### Kubernetes
+| Ресурс | Описание | Значение |
+|--------|----------|----------|
+| Replicas | Доступность | 2 |
+| Limits | CPU/Mem | 100m/128Mi |
+| Service | Доступ | NodePort 30080 |
+| Registry | Приватный | `cr.yandex/...` [1]
+
+### CI/CD пайплайн
+1. ✅ Build & Push (latest + sha)
+2. ✅ `kubectl set image` + `rollout status`
+3. ✅ Только на `main` branch[4]
+
+## 🔍 Доступ к подам
+
+```bash
+# Статус
+kubectl get pods -l app=dio-app
+
+# Логи
+kubectl logs -l app=dio-app -f
+
+# Прокси
+kubectl port-forward svc/dio-app-service 8080:80
+```
+
+## 📈 Масштабирование
+
+```yaml
+# Увеличить реплики
+kubectl scale deployment/dio-app --replicas=4
+
+# HPA (горизонтальное масштабирование)
+kubectl autoscale deployment dio-app --min=2 --max=10 --cpu-percent=70
+```
+
+## 🐛 Troubleshooting
+
+| Проблема | Решение |
+|----------|---------|
+| ImagePullBackOff | Проверить `yc container registry configure-docker` [6] |
+| CrashLoopBackOff | `kubectl logs` + ресурсы |
+| 502/504 | `kubectl rollout status` |
+| Нет доступа | NodePort `30080` на всех нодах [2] |
+
+## 📄 Лицензия
+MIT - используйте свободно!
