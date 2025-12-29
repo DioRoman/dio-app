@@ -4,7 +4,7 @@
 
 ## 🚀 Быстрый старт
 
-<img width="1039" height="1078" alt="Снимок экрана 2025-12-30 012757" src="https://github.com/user-attachments/assets/b89fd906-7480-4d6b-858f-fbdf63788ac9" />
+<img width="608" height="626" alt="Снимок экрана 2025-12-30 015041" src="https://github.com/user-attachments/assets/aeb26e96-c334-40d5-a22e-44b2e0383dd0" />
 
 ### Локальный запуск
 ```bash
