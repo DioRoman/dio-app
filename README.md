@@ -1,6 +1,6 @@
 # 🌟 Dio-App - Персональный гороскоп
 
-Статическое веб-приложение для генерации персонального гороскопа по дате рождения. Автоматический CI/CD деплой в Yandex Managed Kubernetes с использованием Container Registry.[1][2]
+Статическое веб-приложение для генерации персонального гороскопа по дате рождения. Автоматический CI/CD деплой в Yandex Managed Kubernetes с использованием Container Registry.
 
 ## 🚀 Быстрый старт
 
@@ -12,7 +12,7 @@ docker build -t dio-app .
 # Запуск контейнера
 docker run -p 8080:80 dio-app
 ```
-Откройте http://localhost:8080[3]
+Откройте http://localhost:8080
 
 ### Kubernetes (Yandex Cloud)
 Приложение доступно на порту **30080** всех нод кластера:
@@ -29,10 +29,10 @@ GitHub → Yandex Container Registry → Managed Kubernetes (2 реплики)
 ```
 
 **Компоненты:**
-- **Nginx**: Оптимизированный сервер с gzip, долгоживущим кэшем (1 год) для статики[3]
+- **Nginx**: Оптимизированный сервер с gzip, долгоживущим кэшем (1 год) для статики
 - **SPA**: HTML/JS/CSS - определение знака зодиака + готовые гороскопы
-- **Kubernetes**: Deployment (2 поды) + NodePort Service[2]
-- **CI/CD**: GitHub Actions → YCR → `kubectl rollout`[4]
+- **Kubernetes**: Deployment (2 поды) + NodePort Service
+- **CI/CD**: GitHub Actions → YCR → `kubectl rollout`
 
 ## 📁 Структура проекта
 
@@ -61,6 +61,24 @@ YC_SA_KEY          # JSON ключ сервисного аккаунта
 KUBE_CONFIG_DATA   # base64(kubeconfig)
 ```
 
+**Статичные секреты (один раз):**
+- `YC_CLOUD_ID`
+- `YC_FOLDER_ID` 
+- `YC_REGISTRY_ID`
+
+**YC_SA_KEY:**
+```
+yc iam key create --service-account-id ajetshm48atdt72ukdlb --output sa-key.json
+cat sa-key.json | jq -c . | tr -d '\n\r'
+```
+
+**KUBE_CONFIG_DATA:**
+```
+kubectl config view --raw > kubeconfig-full.yaml
+sed -i 's/k8s-master/<master-ip>/g' kubeconfig-full.yaml
+base64 -w 0 kubeconfig-full.yaml | xclip -sel clip
+```
+
 ### 2. Развертывание в кластер
 ```bash
 # Генерация kubeconfig
@@ -72,7 +90,7 @@ kubectl apply -f k8s/
 
 **Роли для SA:**
 - `container-registry.images.pusher` (YCR)
-- `editor` (Kubernetes)[5]
+- `editor` (Kubernetes)
 
 ## 🎯 Особенности
 
@@ -80,7 +98,7 @@ kubectl apply -f k8s/
 - `try_files` для SPA роутинга
 - `Cache-Control: immutable` (1y) для assets
 - Gzip для текста/JS/CSS
-- `tini` для правильного PID 1[3]
+- `tini` для правильного PID 1
 
 ### Kubernetes
 | Ресурс | Описание | Значение |
@@ -88,12 +106,12 @@ kubectl apply -f k8s/
 | Replicas | Доступность | 2 |
 | Limits | CPU/Mem | 100m/128Mi |
 | Service | Доступ | NodePort 30080 |
-| Registry | Приватный | `cr.yandex/...` [1]
+| Registry | Приватный | `cr.yandex/...`
 
 ### CI/CD пайплайн
 1. ✅ Build & Push (latest + sha)
 2. ✅ `kubectl set image` + `rollout status`
-3. ✅ Только на `main` branch[4]
+3. ✅ Только на `main` branch
 
 ## 🔍 Доступ к подам
 
@@ -122,10 +140,10 @@ kubectl autoscale deployment dio-app --min=2 --max=10 --cpu-percent=70
 
 | Проблема | Решение |
 |----------|---------|
-| ImagePullBackOff | Проверить `yc container registry configure-docker` [6] |
+| ImagePullBackOff | Проверить `yc container registry configure-docker` |
 | CrashLoopBackOff | `kubectl logs` + ресурсы |
 | 502/504 | `kubectl rollout status` |
-| Нет доступа | NodePort `30080` на всех нодах [2] |
+| Нет доступа | NodePort `30080` на всех нодах |
 
 ## 📄 Лицензия
 MIT - используйте свободно!
