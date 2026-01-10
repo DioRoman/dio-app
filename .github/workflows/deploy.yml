@@ -1,9 +1,7 @@
 name: 🚀 Build → YCR → K8s Deploy
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags: ['*']
 
 jobs:
   deploy:
@@ -29,14 +27,14 @@ jobs:
     - name: Configure Docker for Yandex Container Registry
       run: |
         yc container registry configure-docker
-            
+        
     - name: 🏗️ Build & Push
       uses: docker/build-push-action@v6
       with:
         context: .
-        push: ${{ github.event_name != 'pull_request' }}
+        push: true
         tags: |
-          cr.yandex/${{ secrets.YC_REGISTRY_ID }}/dio-app:latest
+          cr.yandex/${{ secrets.YC_REGISTRY_ID }}/dio-app:${{ github.ref_name }}
           cr.yandex/${{ secrets.YC_REGISTRY_ID }}/dio-app:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
@@ -44,26 +42,22 @@ jobs:
         sbom: false
         
     - name: ☸️ Deploy to Kubernetes
-      if: github.ref == 'refs/heads/main'
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
         YC_REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
-        IMAGE_TAG: ${{ github.sha }}
+        IMAGE_TAG: ${{ github.ref_name }}
       run: |
         echo "$KUBE_CONFIG_DATA" | base64 -d > kubeconfig.yaml
         export KUBECONFIG=kubeconfig.yaml
         
-        # ✅ Apply с флагами
-        sed "s/\${YC_REGISTRY_ID}/${YC_REGISTRY_ID}/g" k8s/deployment.yaml | \
+        sed "s/\${YC_REGISTRY_ID}/${YC_REGISTRY_ID}/g; s/\${IMAGE_TAG}/${IMAGE_TAG}/g" k8s/deployment.yaml | \
           kubectl apply -f - --validate=false --insecure-skip-tls-verify=true
         
         kubectl apply -f k8s/service.yaml --validate=false --insecure-skip-tls-verify=true
         
-        # ✅ set image БЕЗ --validate
         kubectl set image deployment/dio-app dio-app=cr.yandex/$YC_REGISTRY_ID/dio-app:$IMAGE_TAG \
           --insecure-skip-tls-verify=true
         
-        # ✅ rollout status БЕЗ --validate
         kubectl rollout status deployment/dio-app --timeout=180s --insecure-skip-tls-verify=true
         
         kubectl get pods -l app=dio-app --insecure-skip-tls-verify=true
